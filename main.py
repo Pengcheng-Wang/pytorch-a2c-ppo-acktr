@@ -155,12 +155,14 @@ def main():
                                                                                            Variable(rollouts.states[0].view(-1, actor_critic.state_size)),
                                                                                            Variable(rollouts.masks[:-1].view(-1, 1)),
                                                                                            Variable(rollouts.actions.view(-1, action_shape)))
+            # values should be values of states, states are the hidden states used in rnn module, by pwang8
 
-            values = values.view(args.num_steps, args.num_processes, 1)
+            values = values.view(args.num_steps, args.num_processes, 1) # values are estimated current state values
             action_log_probs = action_log_probs.view(args.num_steps, args.num_processes, 1)
 
-            advantages = Variable(rollouts.returns[:-1]) - values
-            value_loss = advantages.pow(2).mean()
+            # rollouts.returns are current "Action" value calculted following Bellmans' eqaution gamma * State_value(t+1) + reward(t)
+            advantages = Variable(rollouts.returns[:-1]) - values   # This is also the definition of advantage value (action_value - state_value).
+            value_loss = advantages.pow(2).mean()   # values are estimated current state_value(t)
 
             action_loss = -(Variable(advantages.data) * action_log_probs).mean()
 
@@ -189,7 +191,7 @@ def main():
 
             optimizer.step()
         elif args.algo == 'ppo':
-            advantages = rollouts.returns[:-1] - rollouts.value_preds[:-1]
+            advantages = rollouts.returns[:-1] - rollouts.value_preds[:-1]  # calculating the advantage value of an action
             advantages = (advantages - advantages.mean()) / (advantages.std() + 1e-5)
 
             for e in range(args.ppo_epoch):
