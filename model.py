@@ -21,7 +21,7 @@ class FFPolicy(nn.Module):
         raise NotImplementedError
 
     def act(self, inputs, states, masks, deterministic=False):
-        value, x, states = self(inputs, states, masks)
+        value, x, states = self(inputs, states, masks)  # It looks like this self() is invoking forward()
         action = self.dist.sample(x, deterministic=deterministic)
         action_log_probs, dist_entropy = self.dist.logprobs_and_entropy(x, action)
         return value, action, action_log_probs, states

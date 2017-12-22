@@ -66,7 +66,7 @@ def main():
         envs = VecNormalize(envs)
 
     obs_shape = envs.observation_space.shape
-    obs_shape = (obs_shape[0] * args.num_stack, *obs_shape[1:])
+    obs_shape = (obs_shape[0] * args.num_stack, *obs_shape[1:])     # I guess the obs_shape[0] is channel number
 
     if len(envs.observation_space.shape) == 3:
         actor_critic = CNNPolicy(obs_shape[0], envs.action_space, args.recurrent_policy)
