@@ -166,7 +166,8 @@ def main():
             value_loss = advantages.pow(2).mean()   # values are estimated current state_value(t)
 
             action_loss = -(Variable(advantages.data) * action_log_probs).mean()
-            ## todo:pwang8. Read from here. Dec 24, 2017
+
+            # If ACKTR is utilized, it is not only a different optimizer is used, they also added some new loss source
             if args.algo == 'acktr' and optimizer.steps % optimizer.Ts == 0:
                 # Sampled fisher, see Martens 2014
                 actor_critic.zero_grad()
@@ -177,7 +178,7 @@ def main():
                     value_noise = value_noise.cuda()
 
                 sample_values = values + value_noise
-                vf_fisher_loss = -(values - Variable(sample_values.data)).pow(2).mean()
+                vf_fisher_loss = -(values - Variable(sample_values.data)).pow(2).mean()  # don't know what is the difference between this and just randomly sample some noise
 
                 fisher_loss = pg_fisher_loss + vf_fisher_loss
                 optimizer.acc_stats = True
@@ -195,6 +196,9 @@ def main():
             advantages = rollouts.returns[:-1] - rollouts.value_preds[:-1]  # calculating the advantage value of an action
             advantages = (advantages - advantages.mean()) / (advantages.std() + 1e-5)
 
+            # The difference from this ppo optimization to the optimization above is that: it updates params for
+            # multiple epochs in ppo optimization. Because of this, it samples from the rollouts storage a minibatch
+            # every time to calculate gradient. Sampling is conducted for optimization purpose.
             for e in range(args.ppo_epoch):
                 if args.recurrent_policy:
                     data_generator = rollouts.recurrent_generator(advantages,
@@ -213,12 +217,15 @@ def main():
                                                                                                    Variable(states_batch),
                                                                                                    Variable(masks_batch),
                                                                                                    Variable(actions_batch))
-
+                    # For the 1st epoch of updating, I guess the action_log_probls is the same as old_action_log_probs_batch
+                    # because params of the NN have not been updated at that time. But later, in other updating epochs,
+                    # this ratio will generate some error. The old_action_log_probs_batch will not be updated during
+                    # these param updating epochs.
                     adv_targ = Variable(adv_targ)
                     ratio = torch.exp(action_log_probs - Variable(old_action_log_probs_batch))
                     surr1 = ratio * adv_targ
                     surr2 = torch.clamp(ratio, 1.0 - args.clip_param, 1.0 + args.clip_param) * adv_targ
-                    action_loss = -torch.min(surr1, surr2).mean() # PPO's pessimistic surrogate (L^CLIP)
+                    action_loss = -torch.min(surr1, surr2).mean()  # PPO's pessimistic surrogate (L^CLIP)
 
                     value_loss = (Variable(return_batch) - values).pow(2).mean()
 
