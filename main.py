@@ -116,11 +116,12 @@ def main():
     start = time.time()
     for j in range(num_updates):
         for step in range(args.num_steps):
+            # args.num_steps should be the length of interactions before each updating/training
             # Sample actions
             value, action, action_log_prob, states = actor_critic.act(Variable(rollouts.observations[step], volatile=True),
                                                                       Variable(rollouts.states[step], volatile=True),
                                                                       Variable(rollouts.masks[step], volatile=True))
-            cpu_actions = action.data.squeeze(1).cpu().numpy()
+            cpu_actions = action.data.squeeze(1).cpu().numpy()  # returns are state value, sampled action, act_log_prob, hidden states
 
             # Obser reward and next obs
             obs, reward, done, info = envs.step(cpu_actions)
@@ -142,7 +143,7 @@ def main():
                 current_obs *= masks
 
             update_current_obs(obs)
-            rollouts.insert(step, current_obs, states.data, action.data, action_log_prob.data, value.data, reward, masks)
+            rollouts.insert(step, current_obs, states.data, action.data, action_log_prob.data, value.data, reward, masks)  # so the rollout stores one batch of interaction sequences, each sequence has length of args.num_steps
 
         next_value = actor_critic(Variable(rollouts.observations[-1], volatile=True),
                                   Variable(rollouts.states[-1], volatile=True),
@@ -155,7 +156,7 @@ def main():
                                                                                            Variable(rollouts.states[0].view(-1, actor_critic.state_size)),
                                                                                            Variable(rollouts.masks[:-1].view(-1, 1)),
                                                                                            Variable(rollouts.actions.view(-1, action_shape)))
-            # values should be values of states, states are the hidden states used in rnn module, by pwang8
+            # values should be values of observations, states are the hidden states used in rnn module, by pwang8
 
             values = values.view(args.num_steps, args.num_processes, 1) # values are estimated current state values
             action_log_probs = action_log_probs.view(args.num_steps, args.num_processes, 1)
@@ -165,7 +166,7 @@ def main():
             value_loss = advantages.pow(2).mean()   # values are estimated current state_value(t)
 
             action_loss = -(Variable(advantages.data) * action_log_probs).mean()
-
+            ## todo:pwang8. Read from here. Dec 24, 2017
             if args.algo == 'acktr' and optimizer.steps % optimizer.Ts == 0:
                 # Sampled fisher, see Martens 2014
                 actor_critic.zero_grad()

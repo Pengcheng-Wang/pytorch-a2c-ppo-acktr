@@ -22,7 +22,7 @@ class FFPolicy(nn.Module):
 
     def act(self, inputs, states, masks, deterministic=False):
         value, x, states = self(inputs, states, masks)  # It looks like this self() is invoking forward()
-        action = self.dist.sample(x, deterministic=deterministic)
+        action = self.dist.sample(x, deterministic=deterministic)   # x here is the output of NN before the classification/logsoftmax layer
         action_log_probs, dist_entropy = self.dist.logprobs_and_entropy(x, action)
         return value, action, action_log_probs, states
 
