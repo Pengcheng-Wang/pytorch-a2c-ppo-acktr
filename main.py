@@ -221,6 +221,8 @@ def main():
                     # because params of the NN have not been updated at that time. But later, in other updating epochs,
                     # this ratio will generate some error. The old_action_log_probs_batch will not be updated during
                     # these param updating epochs.
+                    # action_log_probs is the log prob of that action taken by the agent. So it's one value here, not
+                    # log_prob for all actions with certain input observation/state. By pwang8, Dec 31, 2017
                     adv_targ = Variable(adv_targ)
                     ratio = torch.exp(action_log_probs - Variable(old_action_log_probs_batch))
                     surr1 = ratio * adv_targ
