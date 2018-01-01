@@ -228,7 +228,7 @@ def main():
                     surr1 = ratio * adv_targ
                     surr2 = torch.clamp(ratio, 1.0 - args.clip_param, 1.0 + args.clip_param) * adv_targ
                     action_loss = -torch.min(surr1, surr2).mean()  # PPO's pessimistic surrogate (L^CLIP)
-
+                    # compared to a2c, the major difference for ppo is that action_loss is calculated in controlled way
                     value_loss = (Variable(return_batch) - values).pow(2).mean()
 
                     optimizer.zero_grad()
