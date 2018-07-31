@@ -151,3 +151,5 @@ python enjoy.py --load-dir trained_models/ppo --env-name "Reacher-v1" --num-stac
 ![QbertNoFrameskip-v4](imgs/acktr_qbert.png)
 
 ![beamriderNoFrameskip-v4](imgs/acktr_beamrider.png)
+
+Follow the way.
